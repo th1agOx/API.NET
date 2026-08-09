@@ -1,3 +1,5 @@
+using API.NET.Service;
+using API.NET.Service.impl;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Internal;
 using ProjetoApi1.Data;
@@ -11,6 +13,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IPersonagemService, PersonagemService>();
 
 var connectionString = builder.Configuration.GetConnectionString("AppDbConnectionString");
 

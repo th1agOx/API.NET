@@ -1,7 +1,6 @@
+using API.NET.DTO;
+using API.NET.Service;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ProjetoApi1.Data;
-using ProjetoApi1.Models;
 
 namespace ProjetoApi1.Controllers
 {
@@ -9,40 +8,33 @@ namespace ProjetoApi1.Controllers
     [Route("api/[controller]")]
     public class PersonagemController : ControllerBase
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IPersonagemService _personagemService;
 
-        public PersonagemController(AppDbContext appDbContext)
+        public PersonagemController(IPersonagemService personagemService)
         {
-            _appDbContext = appDbContext;
+            _personagemService = personagemService;
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddPersonagem([FromBody] Personagem personagem)
+        public async Task<IActionResult> AddPersonagem([FromBody] PersonagemCreateDto dto)
         {
-            if (ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            var result = await _personagemService.AddPersonagem(dto);
 
-            _appDbContext.Personagens.Add(personagem);
-            await _appDbContext.SaveChangesAsync();
-
-            return Created("Personagem adicionar com sucesso!", personagem);
+            return CreatedAtAction(nameof(GetPersonagemById), new { id = result.Id }, result);
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Personagem>>> GetPersonagens()
+        public async Task<ActionResult<IEnumerable<PersonagemResponseDto>>> GetPersonagens()
         {
-            var personagens = await _appDbContext.Personagens.ToListAsync();
+            var personagens = await _personagemService.GetPersonagens();
 
             return Ok(personagens);
         }
 
         [HttpGet("{id}")]
-
-        public async Task<ActionResult<Personagem>> GetPersonagemById(int id)
+        public async Task<ActionResult<PersonagemResponseDto>> GetPersonagemById(int id)
         {
-            var personagem = await _appDbContext.Personagens.FindAsync(id);
+            var personagem = await _personagemService.GetPersonagemById(id);
 
             if (personagem == null)
             {
@@ -53,40 +45,29 @@ namespace ProjetoApi1.Controllers
         }
 
         [HttpPut("{id}")]
-
-        public async Task<IActionResult> UpdatePersonagemById(int id, [FromBody] Personagem personagemAtt)
+        public async Task<IActionResult> UpdatePersonagemById(int id, [FromBody] PersonagemCreateDto dto)
         {
-            var personagemExistente = await _appDbContext.Personagens.FindAsync(id);
+            var personagemAtualizado = await _personagemService.UpdatePersonagemById(id, dto);
 
-            if (personagemExistente == null)
+            if (personagemAtualizado == null)
             {
                 return NotFound("Personagem não localizado no banco");
             }
 
-            _appDbContext.Entry(personagemExistente).CurrentValues.SetValues
-            (personagemAtt);
-
-            await _appDbContext.SaveChangesAsync();
-
-            return StatusCode(201, personagemExistente);
+            return Ok(personagemAtualizado);
         }
 
         [HttpDelete("{id}")]
-
         public async Task<IActionResult> DeletePersonagem(int id)
         {
-            var personagemExistente = await _appDbContext.Personagens.FindAsync(id);
+            var sucesso = await _personagemService.DeletePersonagem(id);
 
-            if (personagemExistente == null)
+            if (!sucesso)
             {
-                NotFound("Personagem não localizado no banco");
+                return NotFound("Personagem não localizado no banco");
             }
 
-            _appDbContext.Personagens.Remove(personagemExistente);
-
-            await _appDbContext.SaveChangesAsync();
-
-            return Ok("Personagem deletado !");
+            return NoContent();
         }
     }
 }
